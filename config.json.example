@@ -1,0 +1,6 @@
+{
+    "token": "github access token",
+    "repository": "organisation/target-repo",
+    "branch": "main",
+    "fullscreen": false
+}
