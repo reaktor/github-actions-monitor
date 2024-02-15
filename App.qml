@@ -108,6 +108,8 @@ Window {
             app.targetRepository = cfg.repository;
             app.githubToken = cfg.token;
             app.targetBranch = cfg.branch;
+            if (typeof cfg.numColumns === "number")
+                app.numColumns = cfg.numColumns;
             if (cfg.fullscreen)
                 showFullScreen();
 
