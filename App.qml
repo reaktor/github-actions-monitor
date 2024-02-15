@@ -14,6 +14,8 @@ Window {
     property string targetRepository
     property string targetBranch
     property string githubToken
+    property int numColumns: 3
+    property int numRows: pipelineStatuses ? Math.ceil(pipelineStatuses.length / numColumns) : 1
 
     width: 1280
     height: 720
@@ -174,8 +176,8 @@ Window {
             width: parent.width
             height: parent.height - header.height
             model: app.pipelineStatuses
-            cellWidth: parent.width / 3
-            cellHeight: grid.height / 4
+            cellWidth: parent.width / numColumns
+            cellHeight: grid.height / numRows
 
             delegate: Item {
                 width: grid.cellWidth
