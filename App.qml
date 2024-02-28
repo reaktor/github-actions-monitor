@@ -1,6 +1,7 @@
 import "./moment.js" as Moment
 import QtQuick 2.15
 import QtQuick.Controls 1.0
+import QtQuick.Layouts 1.15
 import QtQuick.Window 2.15
 
 Window {
@@ -10,16 +11,14 @@ Window {
     property var pipelineStatuses
     property int prCount
     property var lastUpdateDate
+    property string currentTimeOdd: ""
+    property string currentTimeEven: ""
     property int refreshIntervalSeconds: 16
     property string targetRepository
     property string targetBranch
     property string githubToken
     property int numColumns: 3
     property int numRows: pipelineStatuses ? Math.ceil(pipelineStatuses.length / numColumns) : 1
-
-    width: 1280
-    height: 720
-    color: "#071436"
 
     function difftime(dateStr) {
         const prev = Qt.moment(new Date(dateStr));
@@ -73,11 +72,9 @@ Window {
 
     function refresh() {
         refreshPRCount();
-
         const workflowRequests = targetPipelines.map((pl) => {
             return httpGet(`https://api.github.com/repos/${app.targetRepository}/actions/workflows/${pl.id}/runs?branch=${app.targetBranch}`);
         });
-
         Promise.all(workflowRequests).then((reqs) => {
             app.pipelineStatuses = reqs.map(JSON.parse).filter((r) => {
                 return r.workflow_runs && r.workflow_runs.length > 0;
@@ -95,13 +92,14 @@ Window {
         }).catch((e) => {
             return console.error(e);
         });
-
         app.lastUpdateDate = new Date();
     }
 
+    width: 1280
+    height: 720
+    color: "#071436"
     onGithubTokenChanged: initialLoad()
     onTargetPipelinesChanged: targetPipelines && refresh()
-
     Component.onCompleted: {
         httpGet("./config.json").then((fileContent) => {
             const cfg = JSON.parse(fileContent);
@@ -110,6 +108,7 @@ Window {
             app.targetBranch = cfg.branch;
             if (typeof cfg.numColumns === "number")
                 app.numColumns = cfg.numColumns;
+
             if (cfg.fullscreen)
                 showFullScreen();
 
@@ -123,6 +122,23 @@ Window {
         repeat: true
         running: true
         onTriggered: app.refresh()
+    }
+
+    Timer {
+        property int i: 0
+
+        interval: 500
+        repeat: true
+        running: true
+        onTriggered: {
+            if (i === 0)
+                currentTimeEven = `${Qt.moment().format('HH:mm:ss')}`;
+            else if (i === 1 || i === 3)
+                clockOddEven.odd = !clockOddEven.odd;
+            else if (i === 2)
+                currentTimeOdd = `${Qt.moment().format('HH:mm:ss')}`;
+            i = (i + 1) % 4;
+        }
     }
 
     Item {
@@ -148,27 +164,114 @@ Window {
                 textFormat: Text.StyledText
             }
 
-            Text {
-                id: prCounter
-
-                color: "white"
-                text: `<b>${app.prCount}</b> pull requests`
-                font.pointSize: 20
-                textFormat: Text.StyledText
+            ColumnLayout {
                 anchors.right: parent.right
                 anchors.top: parent.top
                 anchors.topMargin: 10
-            }
+                spacing: 1
 
-            Text {
-                id: updateTimestamp
+                Rectangle {
+                    id: clockOddEven
 
-                color: "white"
-                text: `updated at ${Qt.moment(app.lastUpdateDate).format('HH:mm:ss')}`
-                font.pointSize: 20
-                anchors.right: parent.right
-                anchors.bottom: parent.bottom
-                anchors.bottomMargin: 10
+                    property bool odd: true
+
+                    color: "transparent"
+                    Layout.alignment: Qt.AlignRight
+                    Layout.preferredHeight: childrenRect.height
+                    Layout.preferredWidth: childrenRect.width
+                    states: [
+                        State {
+                            when: clockOddEven.odd
+
+                            PropertyChanges {
+                                target: oddElement
+                                opacity: 1
+                            }
+
+                            PropertyChanges {
+                                target: evenElement
+                                opacity: 0
+                            }
+
+                        },
+                        State {
+                            when: !clockOddEven.odd
+
+                            PropertyChanges {
+                                target: oddElement
+                                opacity: 0
+                            }
+
+                            PropertyChanges {
+                                target: evenElement
+                                opacity: 1
+                            }
+
+                        }
+                    ]
+                    transitions: [
+                        Transition {
+                            NumberAnimation {
+                                target: oddElement
+                                properties: "opacity"
+                                duration: 400
+                                easing.type: Easing.OutInQuad
+                            }
+
+                            NumberAnimation {
+                                target: evenElement
+                                properties: "opacity"
+                                duration: 400
+                                easing.type: Easing.OutInQuad
+                            }
+
+                        }
+                    ]
+
+                    Text {
+                        id: evenElement
+
+                        color: "white"
+                        text: currentTimeEven
+                        font.pointSize: 20
+                        textFormat: Text.StyledText
+                        font.family: "Courier New,courier"
+                        font.bold: true
+                    }
+
+                    Text {
+                        id: oddElement
+
+                        opacity: 1
+                        color: "white"
+                        text: currentTimeOdd
+                        font.pointSize: 20
+                        textFormat: Text.StyledText
+                        font.family: "Courier New,courier"
+                        font.bold: true
+                    }
+
+                }
+
+                Text {
+                    id: prCounter
+
+                    color: "white"
+                    text: `<b>${app.prCount}</b> pull requests`
+                    font.pointSize: 20
+                    textFormat: Text.StyledText
+                    Layout.alignment: Qt.AlignRight
+                }
+
+                Text {
+                    id: updateTimestamp
+
+                    color: "white"
+                    text: `updated at <b>${Qt.moment(app.lastUpdateDate).format('HH:mm:ss')}</b>`
+                    font.pointSize: 20
+                    Layout.alignment: Qt.AlignRight
+                }
+
             }
 
         }
