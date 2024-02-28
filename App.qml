@@ -143,16 +143,18 @@ Window {
                 id: headerText
 
                 color: "white"
-                text: `${app.targetBranch} branch`
+                text: `<b>${app.targetBranch}</b> branch`
                 font.pointSize: 60
+                textFormat: Text.StyledText
             }
 
             Text {
                 id: prCounter
 
                 color: "white"
-                text: `${app.prCount} pull requests`
+                text: `<b>${app.prCount}</b> pull requests`
                 font.pointSize: 20
+                textFormat: Text.StyledText
                 anchors.right: parent.right
                 anchors.top: parent.top
                 anchors.topMargin: 10
