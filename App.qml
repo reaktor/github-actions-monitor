@@ -302,7 +302,7 @@ Window {
                         if (status === "success")
                             return "#afff94";
 
-                        if (status.includes("failure"))
+                        if (status && status.includes("failure"))
                             return "#ff7e75";
 
                         return "#fffbb3";
