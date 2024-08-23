@@ -73,20 +73,27 @@ Window {
     function refresh() {
         refreshPRCount();
         const workflowRequests = targetPipelines.map((pl) => {
-            return httpGet(`https://api.github.com/repos/${app.targetRepository}/actions/workflows/${pl.id}/runs?branch=${app.targetBranch}`);
+            return httpGet(`https://api.github.com/repos/${app.targetRepository}/actions/workflows/${pl.id}/runs?branch=${app.targetBranch}`)
+                .then(res  => ({
+                    jsonResponse: JSON.parse(res),
+                    workflowName: pl.name
+                })
+            );
         });
         Promise.all(workflowRequests).then((reqs) => {
-            app.pipelineStatuses = reqs.map(JSON.parse).filter((r) => {
-                return r.workflow_runs && r.workflow_runs.length > 0;
-            }).map((r) => {
-                return r.workflow_runs[0];
-            }).map((run) => {
+            app.pipelineStatuses = reqs.filter(({jsonResponse, workflowName}) => {
+                return jsonResponse.workflow_runs && jsonResponse.workflow_runs.length > 0;
+            }).map(({jsonResponse, workflowName}) => {
+                return { firstRun: jsonResponse.workflow_runs[0], workflowName};
+            }).map(({firstRun, workflowName}) => {
                 return {
-                    "id": run.workflow_id,
-                    "name": run.name,
-                    "status": run.conclusion,
-                    "user": run.actor.login,
-                    "timestamp": run.updated_at
+                    "id": firstRun.workflow_id,
+                    "name": firstRun.name,
+                    "workflowName": workflowName,
+                    "status": firstRun.conclusion,
+                    "user": firstRun.actor.login,
+                    "timestamp": firstRun.updated_at,
+                    "run_number": firstRun.run_number
                 };
             });
         }).catch((e) => {
@@ -312,13 +319,27 @@ Window {
                         anchors.centerIn: parent
 
                         Text {
-                            id: name
+                            id: workflowName
 
                             font.pointSize: 24
                             font.bold: true
                             color: "black"
                             width: parent.width
-                            text: modelData["name"]
+                            text: modelData["workflowName"]
+                            elide: Text.ElideRight
+                        }
+
+                        Text {
+                            id: name
+
+                            anchors.top: workflowName.bottom
+
+                            height: modelData["workflowName"] === modelData["name"] ? 0 : 15
+                            font.pointSize: 12
+                            font.bold: true
+                            color: "black"
+                            width: parent.width
+                            text: `#${modelData["run_number"]} ${modelData["name"]}`
                             elide: Text.ElideRight
                         }
 
