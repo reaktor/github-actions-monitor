@@ -348,6 +348,7 @@ Window {
 
                             font.pointSize: 22
                             anchors.top: name.bottom
+                            anchors.topMargin: 4
                             color: "black"
                             text: modelData["status"]
                         }
