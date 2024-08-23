@@ -38,7 +38,7 @@ Window {
                 if (xhr.status && xhr.status === 200)
                     resolve(xhr.responseText);
                 else
-                    reject(xhr.status, xhr.responseText);
+                    reject(new Error(`GET failed with status ${xhr.status}: ${xhr.responseText}`));
             };
             xhr.setRequestHeader("X-GitHub-Api-Version", "2022-11-28");
             xhr.setRequestHeader("Authorization", `Bearer ${app.githubToken}`);
@@ -66,7 +66,7 @@ Window {
                 };
             });
         }).catch((e) => {
-            return console.error(e);
+            return console.error("initial load failed", e);
         });
     }
 
@@ -97,7 +97,7 @@ Window {
                 };
             });
         }).catch((e) => {
-            return console.error(e);
+            return console.error("refresh failed", e);
         });
         app.lastUpdateDate = new Date();
     }
@@ -120,7 +120,7 @@ Window {
                 showFullScreen();
 
         }).catch((e) => {
-            return console.error(e);
+            return console.error("config failed", e);
         });
     }
 
